@@ -1,0 +1,66 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: 3scale-prometheus-service-monitor
+  labels:
+    app: 3scale-prometheus-service-monitor
+  annotations:
+    openshift.io/display-name: "Red Hat 3scale service-monitor install"
+    openshift.io/provider-display-name: "Red Hat, Inc."
+    description: "A ServiceMonitor for 3scale"
+    tags: "3scale,prometheus,prometheus-operator,monitoring"
+    iconClass: "icon-rh-integration"
+    version: "1.0"
+message: |-
+  prometheus-operator is now deployed to ${NAMESPACE}
+parameters:
+- name: NAMESPACE
+  displayName: Namespace
+  value: 3scale-v24
+  required: true
+  description: Namespace in which the prometheus-operator is installed.
+- name: APICAST_STAGING_SERVICE_NAME
+  displayName: APICast Staging Service Name
+  value: 'apicast-staging'
+  required: true
+  description: The service name of APICast Staging to monitor
+- name: APICAST_STAGING_SERVICE_TEAM
+  displayName: APICast Staging Service Team
+  value: '3scale'
+  required: true
+- name: APICAST_STAGING_PORT
+  displayName: APICast Staging Port
+  value: 'web'
+  required: true
+
+objects:
+#
+# OpenShift resources
+#
+- apiVersion: monitoring.coreos.com/v1 
+  kind: ServiceMonitor
+  metadata:
+    name: ${APICAST_STAGING_SERVICE_NAME}
+    namespace: ${NAMESPACE}
+    labels:
+      team: ${APICAST_STAGING_SERVICE_TEAM}
+  spec:
+    selector:
+      matchLabels:
+        app: ${APICAST_STAGING_SERVICE_NAME}
+    endpoints:
+    - port: ${APICAST_STAGING_PORT}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${APICAST_STAGING_SERVICE_NAME}
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${APICAST_STAGING_SERVICE_NAME}
+  spec:
+    selector:
+      deploymentConfig: ${APICAST_STAGING_SERVICE_NAME}
+    ports:
+    - name: ${APICAST_STAGING_PORT}
+      port: 9421
